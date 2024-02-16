@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "arbitrageclient",
+	"version": "${version}",
+	"name": "ArbitrageClient",
+	"description": "\"Money money money\" - Mr Krabs",
+	"authors": [
+		"Ur Mom"
+	],
+	"contact": {
+		"homepage": "bruh",
+		"sources": "bruh again"
+	},
+	"license": "MIT",
+	"icon": "assets/arbitrageclient/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.plaaasma.arbitrageclient.ArbitrageClient"
+		],
+		"client": [
+			"net.plaaasma.arbitrageclient.ArbitrageClientClient"
+		],
+		"fabric-datagen": [
+			"net.plaaasma.arbitrageclient.ArbitrageClientDataGenerator"
+		]
+	},
+	"mixins": [
+		"arbitrageclient.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.15.6",
+		"minecraft": "~1.20.4",
+		"java": ">=17",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
