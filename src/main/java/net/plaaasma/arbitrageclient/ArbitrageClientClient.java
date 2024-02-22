@@ -172,6 +172,24 @@ public class ArbitrageClientClient implements ClientModInitializer {
                 if (sellItem == Items.COAL_BLOCK) {
                     navigateToPurchase(19, handledScreen, screenHandler, client);
                 }
+                else if (sellItem == Items.IRON_BLOCK) {
+                    navigateToPurchase(20, handledScreen, screenHandler, client);
+                }
+                else if (sellItem == Items.GOLD_BLOCK) {
+                    navigateToPurchase(21, handledScreen, screenHandler, client);
+                }
+                else if (sellItem == Items.LAPIS_BLOCK) {
+                    navigateToPurchase(22, handledScreen, screenHandler, client);
+                }
+                else if (sellItem == Items.EMERALD_BLOCK) {
+                    navigateToPurchase(23, handledScreen, screenHandler, client);
+                }
+                else if (sellItem == Items.DIAMOND_BLOCK) {
+                    navigateToPurchase(24, handledScreen, screenHandler, client);
+                }
+                else if (sellItem == Items.NETHERITE_BLOCK) {
+                    navigateToPurchase(25, handledScreen, screenHandler, client);
+                }
             }
             else {
                 HashMap<String, List<Double>> priceMap = getPriceMap(screenHandler);
