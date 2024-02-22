@@ -479,7 +479,7 @@ public class ArbitrageClientClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
 
-            if (client.world.getTime() % 2 == 0) {
+            if (client.world.getTime() % 3 == 0) {
                 if (client.currentScreen instanceof HandledScreen) {
                     HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
                     ScreenHandler screenHandler = handledScreen.getScreenHandler();
