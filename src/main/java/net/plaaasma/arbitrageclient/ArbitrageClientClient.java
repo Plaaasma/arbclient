@@ -168,27 +168,23 @@ public class ArbitrageClientClient implements ClientModInitializer {
     public void doCheckAndPurchase(HandledScreen<?> handledScreen, ScreenHandler screenHandler, MinecraftClient client) {
         if (handledScreen.getTitle().getString().contains("Ores")) {
             if (hasSellables(client)) {
-                Item sellItem = sellableItem(client);
-                if (sellItem == Items.COAL_BLOCK) {
-                    navigateToPurchase(19, handledScreen, screenHandler, client);
-                }
-                else if (sellItem == Items.IRON_BLOCK) {
-                    navigateToPurchase(20, handledScreen, screenHandler, client);
-                }
-                else if (sellItem == Items.GOLD_BLOCK) {
-                    navigateToPurchase(21, handledScreen, screenHandler, client);
-                }
-                else if (sellItem == Items.LAPIS_BLOCK) {
-                    navigateToPurchase(22, handledScreen, screenHandler, client);
-                }
-                else if (sellItem == Items.EMERALD_BLOCK) {
-                    navigateToPurchase(23, handledScreen, screenHandler, client);
-                }
-                else if (sellItem == Items.DIAMOND_BLOCK) {
-                    navigateToPurchase(24, handledScreen, screenHandler, client);
-                }
-                else if (sellItem == Items.NETHERITE_BLOCK) {
-                    navigateToPurchase(25, handledScreen, screenHandler, client);
+                if (enabled) {
+                    Item sellItem = sellableItem(client);
+                    if (sellItem == Items.COAL_BLOCK) {
+                        navigateToPurchase(19, handledScreen, screenHandler, client);
+                    } else if (sellItem == Items.IRON_BLOCK) {
+                        navigateToPurchase(20, handledScreen, screenHandler, client);
+                    } else if (sellItem == Items.GOLD_BLOCK) {
+                        navigateToPurchase(21, handledScreen, screenHandler, client);
+                    } else if (sellItem == Items.LAPIS_BLOCK) {
+                        navigateToPurchase(22, handledScreen, screenHandler, client);
+                    } else if (sellItem == Items.EMERALD_BLOCK) {
+                        navigateToPurchase(23, handledScreen, screenHandler, client);
+                    } else if (sellItem == Items.DIAMOND_BLOCK) {
+                        navigateToPurchase(24, handledScreen, screenHandler, client);
+                    } else if (sellItem == Items.NETHERITE_BLOCK) {
+                        navigateToPurchase(25, handledScreen, screenHandler, client);
+                    }
                 }
             }
             else {
@@ -341,19 +337,15 @@ public class ArbitrageClientClient implements ClientModInitializer {
                     ItemStack slotStack = screenHandler.getSlot(8).getStack();
 
                     ClickSlotC2SPacket clickSlotC2SPacket = new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), 8, 0, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap);
-                    if (!packetQueue.contains(clickSlotC2SPacket)) {
-                        packetQueue.add(clickSlotC2SPacket);
-                        packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
-                    }
+                    packetQueue.add(clickSlotC2SPacket);
+                    packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
                 }
                 else {
                     ItemStack slotStack = screenHandler.getSlot(16).getStack();
 
                     ClickSlotC2SPacket clickSlotC2SPacket = new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), 16, 0, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap);
-                    if (!packetQueue.contains(clickSlotC2SPacket)) {
-                        packetQueue.add(clickSlotC2SPacket);
-                        packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
-                    }
+                    packetQueue.add(clickSlotC2SPacket);
+                    packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
                 }
             }
         }
@@ -425,14 +417,10 @@ public class ArbitrageClientClient implements ClientModInitializer {
     public boolean hasCraftables(MinecraftClient client) {
         boolean canCraft = false;
 
-        ItemStack heldStack = client.player.currentScreenHandler.getCursorStack();
         for (int slot = 0; slot < client.player.getInventory().size(); slot++) {
             ItemStack slotStack = client.player.getInventory().getStack(slot);
             if (slotStack.isOf(Items.COAL) || slotStack.isOf(Items.IRON_INGOT) || slotStack.isOf(Items.GOLD_INGOT) || slotStack.isOf(Items.LAPIS_LAZULI) || slotStack.isOf(Items.EMERALD) || slotStack.isOf(Items.DIAMOND) || slotStack.isOf(Items.NETHERITE_INGOT)) {
                 int itemCount = slotStack.getCount();
-                if (heldStack.isOf(slotStack.getItem())) {
-                    itemCount += heldStack.getCount();
-                }
                 if (itemCount >= 9) {
                     canCraft = true;
                     break;
@@ -462,10 +450,9 @@ public class ArbitrageClientClient implements ClientModInitializer {
     public boolean hasSellables(MinecraftClient client) {
         boolean canSell = false;
 
-        ItemStack heldStack = client.player.currentScreenHandler.getCursorStack();
         for (int slot = 0; slot < client.player.getInventory().size(); slot++) {
             ItemStack slotStack = client.player.getInventory().getStack(slot);
-            if (slotStack.isOf(Items.COAL_BLOCK) || heldStack.isOf(Items.COAL_BLOCK) || slotStack.isOf(Items.IRON_BLOCK) || heldStack.isOf(Items.IRON_BLOCK) || slotStack.isOf(Items.GOLD_BLOCK) || heldStack.isOf(Items.GOLD_BLOCK) || slotStack.isOf(Items.LAPIS_BLOCK) || heldStack.isOf(Items.LAPIS_BLOCK) || slotStack.isOf(Items.EMERALD_BLOCK) || heldStack.isOf(Items.EMERALD_BLOCK) || slotStack.isOf(Items.DIAMOND_BLOCK) || heldStack.isOf(Items.DIAMOND_BLOCK) || slotStack.isOf(Items.NETHERITE_BLOCK) || heldStack.isOf(Items.NETHERITE_BLOCK)) {
+            if (slotStack.isOf(Items.COAL_BLOCK) || slotStack.isOf(Items.IRON_BLOCK) || slotStack.isOf(Items.GOLD_BLOCK) || slotStack.isOf(Items.LAPIS_BLOCK) || slotStack.isOf(Items.EMERALD_BLOCK) || slotStack.isOf(Items.DIAMOND_BLOCK) || slotStack.isOf(Items.NETHERITE_BLOCK)) {
                 canSell = true;
             }
         }
