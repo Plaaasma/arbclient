@@ -3,7 +3,10 @@
 	"package": "net.plaaasma.arbitrageclient.mixin",
 	"compatibilityLevel": "JAVA_17",
 	"mixins": [
-		"ScreenMixin"
+		"ScreenMixin",
+		"MultiplayerScreenMixin",
+		"ClientPlayNetHandleMixin",
+		"ChatScreenMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
