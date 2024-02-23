@@ -343,9 +343,11 @@ public class ArbitrageClientClient implements ClientModInitializer {
                 else {
                     ItemStack slotStack = screenHandler.getSlot(16).getStack();
 
-                    ClickSlotC2SPacket clickSlotC2SPacket = new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), 16, 0, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap);
-                    packetQueue.add(clickSlotC2SPacket);
-                    packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
+                    if (!slotStack.getName().getString().toLowerCase().contains("block")) {
+                        ClickSlotC2SPacket clickSlotC2SPacket = new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), 16, 0, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap);
+                        packetQueue.add(clickSlotC2SPacket);
+                        packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
+                    }
                 }
             }
         }
@@ -479,7 +481,7 @@ public class ArbitrageClientClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
 
-            if (client.world.getTime() % 3 == 0) {
+            if (client.world.getTime() % 4 == 0) {
                 if (client.currentScreen instanceof HandledScreen) {
                     HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
                     ScreenHandler screenHandler = handledScreen.getScreenHandler();
@@ -524,6 +526,7 @@ public class ArbitrageClientClient implements ClientModInitializer {
                     if (packet instanceof CloseHandledScreenC2SPacket) {
                         HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
                         handledScreen.close();
+                        packetQueue.clear();
                     }
                 }
             }
