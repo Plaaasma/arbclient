@@ -34,6 +34,8 @@ import net.minecraft.nbt.NbtList;
 import net.minecraft.network.PacketByteBuf;
 import net.minecraft.network.packet.Packet;
 import net.minecraft.network.packet.c2s.play.*;
+import net.minecraft.network.packet.s2c.play.ItemPickupAnimationS2CPacket;
+import net.minecraft.network.packet.s2c.play.UpdateSelectedSlotS2CPacket;
 import net.minecraft.recipe.book.RecipeBook;
 import net.minecraft.screen.CrafterScreenHandler;
 import net.minecraft.screen.CraftingScreenHandler;
@@ -115,17 +117,19 @@ public class ArbitrageClientClient implements ClientModInitializer {
                                 String sellDictString = loreList.getString(0);
                                 String buyDictString = loreList.getString(1);
                                 if (sellDictString != null && buyDictString != null) {
-                                    JsonObject sellJson = JsonParser.parseString(sellDictString).getAsJsonObject();
-                                    JsonObject buyJson = JsonParser.parseString(buyDictString).getAsJsonObject();
-                                    if (sellJson != null && buyJson != null) {
-                                        if (sellJson.has("extra") && buyJson.has("extra")) {
-                                            String sellText = sellJson.get("extra").getAsJsonArray().get(0).getAsJsonObject().get("text").toString();
-                                            String buyText = buyJson.get("extra").getAsJsonArray().get(0).getAsJsonObject().get("text").toString();
-                                            if (sellText.toLowerCase().contains("sell")) {
-                                                sellPrice = Double.parseDouble(sellText.replaceAll("[^0-9.]", ""));
-                                                buyPrice = Double.parseDouble(buyText.replaceAll("[^0-9.]", ""));
-                                            }
+                                    if (JsonParser.parseString(sellDictString).isJsonObject() && JsonParser.parseString(buyDictString).isJsonObject()) {
+                                        JsonObject sellJson = JsonParser.parseString(sellDictString).getAsJsonObject();
+                                        JsonObject buyJson = JsonParser.parseString(buyDictString).getAsJsonObject();
+                                        if (sellJson != null && buyJson != null) {
+                                            if (sellJson.has("extra") && buyJson.has("extra")) {
+                                                String sellText = sellJson.get("extra").getAsJsonArray().get(0).getAsJsonObject().get("text").toString();
+                                                String buyText = buyJson.get("extra").getAsJsonArray().get(0).getAsJsonObject().get("text").toString();
+                                                if (sellText.toLowerCase().contains("sell")) {
+                                                    sellPrice = Double.parseDouble(sellText.replaceAll("[^0-9.]", ""));
+                                                    buyPrice = Double.parseDouble(buyText.replaceAll("[^0-9.]", ""));
+                                                }
 
+                                            }
                                         }
                                     }
                                 }
@@ -348,6 +352,9 @@ public class ArbitrageClientClient implements ClientModInitializer {
                         packetQueue.add(clickSlotC2SPacket);
                         packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
                     }
+                    else {
+                        packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
+                    }
                 }
             }
         }
@@ -378,16 +385,11 @@ public class ArbitrageClientClient implements ClientModInitializer {
                         slotStack = screenHandler.getSlot(slotToPullFrom).getStack();
 
                         packetQueue.add(new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), slotToPullFrom, 0, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap));
+                    }
+                    for (int j = 1; j < 10; j++) {
+                        slotStack = screenHandler.getSlot(j).getStack();
 
-                        for (int j = 1; j < 10; j++) {
-                            slotStack = screenHandler.getSlot(j).getStack();
-
-                            packetQueue.add(new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), j, 1, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap));
-                        }
-
-                        slotStack = screenHandler.getSlot(slotToPullFrom).getStack();
-
-                        packetQueue.add(new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), slotToPullFrom, 0, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap));
+                        packetQueue.add(new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), j, 1, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap));
                     }
                 }
                 else {
@@ -419,10 +421,18 @@ public class ArbitrageClientClient implements ClientModInitializer {
     public boolean hasCraftables(MinecraftClient client) {
         boolean canCraft = false;
 
+        ItemStack heldStack = client.player.currentScreenHandler.getCursorStack();
         for (int slot = 0; slot < client.player.getInventory().size(); slot++) {
             ItemStack slotStack = client.player.getInventory().getStack(slot);
-            if (slotStack.isOf(Items.COAL) || slotStack.isOf(Items.IRON_INGOT) || slotStack.isOf(Items.GOLD_INGOT) || slotStack.isOf(Items.LAPIS_LAZULI) || slotStack.isOf(Items.EMERALD) || slotStack.isOf(Items.DIAMOND) || slotStack.isOf(Items.NETHERITE_INGOT)) {
+            if ((slotStack.isOf(Items.COAL) || slotStack.isOf(Items.IRON_INGOT) || slotStack.isOf(Items.GOLD_INGOT) || slotStack.isOf(Items.LAPIS_LAZULI) || slotStack.isOf(Items.EMERALD) || slotStack.isOf(Items.DIAMOND) || slotStack.isOf(Items.NETHERITE_INGOT))) {
                 int itemCount = slotStack.getCount();
+                if (itemCount >= 9) {
+                    canCraft = true;
+                    break;
+                }
+            }
+            else if (heldStack.isOf(Items.COAL) || heldStack.isOf(Items.IRON_INGOT) || heldStack.isOf(Items.GOLD_INGOT) || heldStack.isOf(Items.LAPIS_LAZULI) || heldStack.isOf(Items.EMERALD) || heldStack.isOf(Items.DIAMOND) || heldStack.isOf(Items.NETHERITE_INGOT)) {
+                int itemCount = heldStack.getCount();
                 if (itemCount >= 9) {
                     canCraft = true;
                     break;
@@ -481,36 +491,64 @@ public class ArbitrageClientClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player == null) return;
 
-            if (client.world.getTime() % 4 == 0) {
+            if (client.world.getTime() % 8 == 0) {
                 if (client.currentScreen instanceof HandledScreen) {
                     HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
-                    ScreenHandler screenHandler = handledScreen.getScreenHandler();
-                    doCheckAndPurchase(handledScreen, screenHandler, client);
+                    if (client.player.getStackInHand(Hand.MAIN_HAND).isOf(Items.COMPASS) && enabled) {
+                        ScreenHandler screenHandler = handledScreen.getScreenHandler();
+                        Int2ObjectOpenHashMap<ItemStack> slotInt2ObjectMap = new Int2ObjectOpenHashMap<ItemStack>();
+                        DefaultedList<Slot> defaultedList = screenHandler.slots;
+                        int i = defaultedList.size();
+                        ArrayList<ItemStack> list = Lists.newArrayListWithCapacity(i);
+                        for (Slot slot : defaultedList) {
+                            list.add(slot.getStack().copy());
+                        }
+                        for (int j = 0; j < i; ++j) {
+                            ItemStack itemStack2;
+                            ItemStack itemStack = list.get(j);
+                            if (ItemStack.areEqual(itemStack, itemStack2 = defaultedList.get(j).getStack())) continue;
+                            slotInt2ObjectMap.put(j, itemStack2.copy());
+                        }
+
+                        ItemStack slotStack = screenHandler.getSlot(11).getStack();
+                        packetQueue.add(new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), 11, 0, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap));
+
+                        packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
+                    }
+                    else{
+                        ScreenHandler screenHandler = handledScreen.getScreenHandler();
+                        doCheckAndPurchase(handledScreen, screenHandler, client);
+                    }
                 } else {
                     if (enabled) {
-                        if (hasSellables(client)) {
-                            if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
-                                client.getNetworkHandler().sendCommand("shop");
-                                lastShopTime = client.world.getTime();
+                        if (client.player.getStackInHand(Hand.MAIN_HAND).isOf(Items.COMPASS)) {
+                            if (client.currentScreen == null) {
+                                packetQueue.add(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0));
                             }
                         }
                         else {
-                            HitResult hitResult = client.crosshairTarget;
+                            if (hasSellables(client)) {
+                                if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
+                                    client.getNetworkHandler().sendCommand("shop");
+                                    lastShopTime = client.world.getTime();
+                                }
+                            } else {
+                                HitResult hitResult = client.crosshairTarget;
 
-                            // Check if we're looking at a block
-                            if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
-                                BlockHitResult blockHitResult = (BlockHitResult) hitResult;
+                                // Check if we're looking at a block
+                                if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
+                                    BlockHitResult blockHitResult = (BlockHitResult) hitResult;
 
-                                BlockState hitBlockState = client.world.getBlockState(blockHitResult.getBlockPos());
+                                    BlockState hitBlockState = client.world.getBlockState(blockHitResult.getBlockPos());
 
-                                if (hitBlockState.getBlock() == Blocks.CRAFTING_TABLE) {
-                                    if (hasCraftables(client)) {
-                                        packetQueue.add(new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, blockHitResult, 0));
-                                    }
-                                    else {
-                                        if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
-                                            client.getNetworkHandler().sendCommand("shop");
-                                            lastShopTime = client.world.getTime();
+                                    if (hitBlockState.getBlock() == Blocks.CRAFTING_TABLE) {
+                                        if (hasCraftables(client)) {
+                                            packetQueue.add(new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, blockHitResult, 0));
+                                        } else {
+                                            if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
+                                                client.getNetworkHandler().sendCommand("shop");
+                                                lastShopTime = client.world.getTime();
+                                            }
                                         }
                                     }
                                 }
@@ -521,13 +559,25 @@ public class ArbitrageClientClient implements ClientModInitializer {
 
                 if (!packetQueue.isEmpty()) {
                     Packet<?> packet = packetQueue.get(0);
-                    client.getNetworkHandler().sendPacket(packet);
                     packetQueue.remove(0);
                     if (packet instanceof CloseHandledScreenC2SPacket) {
-                        HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
-                        handledScreen.close();
-                        packetQueue.clear();
+                        if (client.currentScreen instanceof HandledScreen) {
+                            HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
+                            handledScreen.close();
+                            packetQueue.clear();
+                        }
                     }
+                    else if (packet instanceof ClickSlotC2SPacket) {
+                        if (client.currentScreen instanceof HandledScreen) {
+                            HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
+                            ScreenHandler screenHandler = handledScreen.getScreenHandler();
+
+                            if (handledScreen.getTitle().getString().contains("Craft")) {
+                                screenHandler.onSlotClick(((ClickSlotC2SPacket) packet).getSlot(), ((ClickSlotC2SPacket) packet).getButton(), ((ClickSlotC2SPacket) packet).getActionType(), client.player);
+                            }
+                        }
+                    }
+                    client.getNetworkHandler().sendPacket(packet);
                 }
             }
         });
