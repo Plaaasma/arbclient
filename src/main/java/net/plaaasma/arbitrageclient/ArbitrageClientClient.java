@@ -197,106 +197,106 @@ public class ArbitrageClientClient implements ClientModInitializer {
                 if (priceMap.containsKey("Coal") && priceMap.containsKey("Block of Coal")) {
                     double coalBlockMakePrice = priceMap.get("Coal").get(1) * 9;
                     double coalBlockSellPrice = priceMap.get("Block of Coal").get(0);
-                    coal_profitable = coalBlockMakePrice < coalBlockSellPrice;
+                    coal_profitable = coalBlockSellPrice - coalBlockMakePrice > 0;
                     coal_margin = coalBlockSellPrice - coalBlockMakePrice;
 
-                    if (enabled && coal_profitable) {
+                    if (enabled && coal_profitable && coal_margin >= 0.05) {
                         navigateToPurchase(10, handledScreen, screenHandler, client);
                     }
 
                     double coalIngotMakePrice = priceMap.get("Block of Coal").get(1) / 9;
                     double coalIngotSellPrice = priceMap.get("Coal").get(0);
-                    coal_block_profitable = coalIngotMakePrice < coalIngotSellPrice;
+                    coal_block_profitable = coalIngotSellPrice - coalIngotMakePrice > 0;
                     coal_block_margin = coalIngotSellPrice - coalIngotMakePrice;
                 }
                 if (priceMap.containsKey("Iron Ingot") && priceMap.containsKey("Block of Iron")) {
                     double ironBlockMakePrice = priceMap.get("Iron Ingot").get(1) * 9;
                     double ironBlockSellPrice = priceMap.get("Block of Iron").get(0);
-                    iron_profitable = ironBlockMakePrice < ironBlockSellPrice;
+                    iron_profitable = ironBlockSellPrice - ironBlockMakePrice > 0;
                     iron_margin = ironBlockSellPrice - ironBlockMakePrice;
 
-                    if (enabled && iron_profitable) {
+                    if (enabled && iron_profitable && iron_margin >= 0.05) {
                         navigateToPurchase(11, handledScreen, screenHandler, client);
                     }
 
                     double ironIngotMakePrice = priceMap.get("Block of Iron").get(1) / 9;
                     double ironIngotSellPrice = priceMap.get("Iron Ingot").get(0);
-                    iron_block_profitable = ironIngotMakePrice < ironIngotSellPrice;
+                    iron_block_profitable = ironIngotSellPrice - ironIngotMakePrice > 0;
                     iron_block_margin = ironIngotSellPrice - ironIngotMakePrice;
                 }
                 if (priceMap.containsKey("Gold Ingot") && priceMap.containsKey("Block of Gold")) {
                     double goldBlockMakePrice = priceMap.get("Gold Ingot").get(1) * 9;
                     double goldBlockSellPrice = priceMap.get("Block of Gold").get(0);
-                    gold_profitable = goldBlockMakePrice < goldBlockSellPrice;
+                    gold_profitable = goldBlockSellPrice - goldBlockMakePrice > 0;
                     gold_margin = goldBlockSellPrice - goldBlockMakePrice;
 
-                    if (enabled && gold_profitable) {
+                    if (enabled && gold_profitable && gold_margin >= 5) {
                         navigateToPurchase(12, handledScreen, screenHandler, client);
                     }
 
                     double goldIngotMakePrice = priceMap.get("Block of Gold").get(1) / 9;
                     double goldIngotSellPrice = priceMap.get("Gold Ingot").get(0);
-                    gold_block_profitable = goldIngotMakePrice < goldIngotSellPrice;
+                    gold_block_profitable = goldIngotSellPrice - goldIngotMakePrice > 0;
                     gold_block_margin = goldIngotSellPrice - goldIngotMakePrice;
                 }
                 if (priceMap.containsKey("Lapis Lazuli") && priceMap.containsKey("Block of Lapis Lazuli")) {
                     double lapisBlockMakePrice = priceMap.get("Lapis Lazuli").get(1) * 9;
                     double lapisBlockSellPrice = priceMap.get("Block of Lapis Lazuli").get(0);
-                    lapis_profitable = lapisBlockMakePrice < lapisBlockSellPrice;
+                    lapis_profitable = lapisBlockSellPrice - lapisBlockMakePrice > 0;
                     lapis_margin = lapisBlockSellPrice - lapisBlockMakePrice;
 
-                    if (enabled && lapis_profitable) {
+                    if (enabled && lapis_profitable && lapis_margin >= 8) {
                         navigateToPurchase(13, handledScreen, screenHandler, client);
                     }
 
                     double lapisIngotMakePrice = priceMap.get("Block of Lapis Lazuli").get(1) / 9;
                     double lapisIngotSellPrice = priceMap.get("Lapis Lazuli").get(0);
-                    lapis_block_profitable = lapisIngotMakePrice < lapisIngotSellPrice;
+                    lapis_block_profitable = lapisIngotSellPrice - lapisIngotMakePrice > 0;
                     lapis_block_margin = lapisIngotSellPrice - lapisIngotMakePrice;
                 }
                 if (priceMap.containsKey("Diamond") && priceMap.containsKey("Block of Diamond")) {
                     double diamondBlockMakePrice = priceMap.get("Diamond").get(1) * 9;
                     double diamondBlockSellPrice = priceMap.get("Block of Diamond").get(0);
-                    diamond_profitable = diamondBlockMakePrice < diamondBlockSellPrice;
+                    diamond_profitable = diamondBlockSellPrice - diamondBlockMakePrice > 0;
                     diamond_margin = diamondBlockSellPrice - diamondBlockMakePrice;
 
-                    if (enabled && diamond_profitable) {
+                    if (enabled && diamond_profitable && diamond_margin >= 10) {
                         navigateToPurchase(14, handledScreen, screenHandler, client);
                     }
 
                     double diamondIngotMakePrice = priceMap.get("Block of Diamond").get(1) / 9;
                     double diamondIngotSellPrice = priceMap.get("Diamond").get(0);
-                    diamond_block_profitable = diamondIngotMakePrice < diamondIngotSellPrice;
+                    diamond_block_profitable = diamondIngotSellPrice - diamondIngotMakePrice > 0;
                     diamond_block_margin = diamondIngotSellPrice - diamondIngotMakePrice;
                 }
                 if (priceMap.containsKey("Emerald") && priceMap.containsKey("Block of Emerald")) {
                     double emeraldBlockMakePrice = priceMap.get("Emerald").get(1) * 9;
                     double emeraldBlockSellPrice = priceMap.get("Block of Emerald").get(0);
-                    emerald_profitable = emeraldBlockMakePrice < emeraldBlockSellPrice;
+                    emerald_profitable = emeraldBlockSellPrice - emeraldBlockMakePrice > 0;
                     emerald_margin = emeraldBlockSellPrice - emeraldBlockMakePrice;
 
-                    if (enabled && emerald_profitable) {
+                    if (enabled && emerald_profitable && emerald_margin >= 12) {
                         navigateToPurchase(15, handledScreen, screenHandler, client);
                     }
 
                     double emeraldIngotMakePrice = priceMap.get("Block of Emerald").get(1) / 9;
                     double emeraldIngotSellPrice = priceMap.get("Emerald").get(0);
-                    emerald_block_profitable = emeraldIngotMakePrice < emeraldIngotSellPrice;
+                    emerald_block_profitable = emeraldIngotSellPrice - emeraldIngotMakePrice > 0;
                     emerald_block_margin = emeraldIngotSellPrice - emeraldIngotMakePrice;
                 }
                 if (priceMap.containsKey("Netherite Ingot") && priceMap.containsKey("Block of Netherite")) {
                     double netheriteBlockMakePrice = priceMap.get("Netherite Ingot").get(1) * 9;
                     double netheriteBlockSellPrice = priceMap.get("Block of Netherite").get(0);
-                    netherite_profitable = netheriteBlockMakePrice < netheriteBlockSellPrice;
+                    netherite_profitable = netheriteBlockSellPrice - netheriteBlockMakePrice > 0;
                     netherite_margin = netheriteBlockSellPrice - netheriteBlockMakePrice;
 
-                    if (enabled && netherite_profitable) {
+                    if (enabled && netherite_profitable && netherite_margin >= 20) {
                         navigateToPurchase(16, handledScreen, screenHandler, client);
                     }
 
                     double netheriteIngotMakePrice = priceMap.get("Block of Netherite").get(1) / 9;
                     double netheriteIngotSellPrice = priceMap.get("Netherite Ingot").get(0);
-                    netherite_block_profitable = netheriteIngotMakePrice < netheriteIngotSellPrice;
+                    netherite_block_profitable = netheriteIngotSellPrice - netheriteIngotMakePrice > 0;
                     netherite_block_margin = netheriteIngotSellPrice - netheriteIngotMakePrice;
                 }
             }
