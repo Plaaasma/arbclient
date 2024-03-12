@@ -44,6 +44,7 @@ import net.minecraft.screen.slot.Slot;
 import net.minecraft.screen.slot.SlotActionType;
 import net.minecraft.text.Text;
 import net.minecraft.util.Colors;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.collection.DefaultedList;
@@ -63,6 +64,9 @@ public class ArbitrageClientClient implements ClientModInitializer {
     public static final Logger C_LOGGER = LoggerFactory.getLogger(ArbitrageClient.MOD_ID);
 
     public static boolean enabled = false;
+    public static boolean minecart = false;
+    public static boolean crafter = false;
+    public static boolean gold_crafter = false;
 
     public static boolean coal_profitable = false;
     public static double coal_margin = 0;
@@ -486,98 +490,277 @@ public class ArbitrageClientClient implements ClientModInitializer {
         return sellItem;
     }
 
-    @Override
-    public void onInitializeClient() {
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (client.player == null) return;
+    private void doArbitrage(MinecraftClient client) {
+        if (client.currentScreen instanceof HandledScreen) {
+            HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
+            if (client.player.getStackInHand(Hand.MAIN_HAND).isOf(Items.COMPASS) && enabled) {
+                ScreenHandler screenHandler = handledScreen.getScreenHandler();
+                Int2ObjectOpenHashMap<ItemStack> slotInt2ObjectMap = new Int2ObjectOpenHashMap<ItemStack>();
+                DefaultedList<Slot> defaultedList = screenHandler.slots;
+                int i = defaultedList.size();
+                ArrayList<ItemStack> list = Lists.newArrayListWithCapacity(i);
+                for (Slot slot : defaultedList) {
+                    list.add(slot.getStack().copy());
+                }
+                for (int j = 0; j < i; ++j) {
+                    ItemStack itemStack2;
+                    ItemStack itemStack = list.get(j);
+                    if (ItemStack.areEqual(itemStack, itemStack2 = defaultedList.get(j).getStack())) continue;
+                    slotInt2ObjectMap.put(j, itemStack2.copy());
+                }
 
-            if (client.world.getTime() % 8 == 0) {
-                if (client.currentScreen instanceof HandledScreen) {
-                    HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
-                    if (client.player.getStackInHand(Hand.MAIN_HAND).isOf(Items.COMPASS) && enabled) {
-                        ScreenHandler screenHandler = handledScreen.getScreenHandler();
-                        Int2ObjectOpenHashMap<ItemStack> slotInt2ObjectMap = new Int2ObjectOpenHashMap<ItemStack>();
-                        DefaultedList<Slot> defaultedList = screenHandler.slots;
-                        int i = defaultedList.size();
-                        ArrayList<ItemStack> list = Lists.newArrayListWithCapacity(i);
-                        for (Slot slot : defaultedList) {
-                            list.add(slot.getStack().copy());
-                        }
-                        for (int j = 0; j < i; ++j) {
-                            ItemStack itemStack2;
-                            ItemStack itemStack = list.get(j);
-                            if (ItemStack.areEqual(itemStack, itemStack2 = defaultedList.get(j).getStack())) continue;
-                            slotInt2ObjectMap.put(j, itemStack2.copy());
-                        }
+                ItemStack slotStack = screenHandler.getSlot(11).getStack();
+                packetQueue.add(new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), 11, 0, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap));
 
-                        ItemStack slotStack = screenHandler.getSlot(11).getStack();
-                        packetQueue.add(new ClickSlotC2SPacket(screenHandler.syncId, screenHandler.nextRevision(), 11, 0, SlotActionType.PICKUP, slotStack, slotInt2ObjectMap));
-
-                        packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
+                packetQueue.add(new CloseHandledScreenC2SPacket(screenHandler.syncId));
+            }
+            else{
+                ScreenHandler screenHandler = handledScreen.getScreenHandler();
+                doCheckAndPurchase(handledScreen, screenHandler, client);
+            }
+        } else {
+            if (enabled) {
+                if (client.player.getStackInHand(Hand.MAIN_HAND).isOf(Items.COMPASS)) {
+                    if (client.currentScreen == null) {
+                        packetQueue.add(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0));
                     }
-                    else{
-                        ScreenHandler screenHandler = handledScreen.getScreenHandler();
-                        doCheckAndPurchase(handledScreen, screenHandler, client);
-                    }
-                } else {
-                    if (enabled) {
-                        if (client.player.getStackInHand(Hand.MAIN_HAND).isOf(Items.COMPASS)) {
-                            if (client.currentScreen == null) {
-                                packetQueue.add(new PlayerInteractItemC2SPacket(Hand.MAIN_HAND, 0));
-                            }
+                }
+                else {
+                    if (hasSellables(client)) {
+                        if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
+                            client.getNetworkHandler().sendCommand("shop");
+                            lastShopTime = client.world.getTime();
                         }
-                        else {
-                            if (hasSellables(client)) {
-                                if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
-                                    client.getNetworkHandler().sendCommand("shop");
-                                    lastShopTime = client.world.getTime();
-                                }
-                            } else {
-                                HitResult hitResult = client.crosshairTarget;
+                    } else {
+                        HitResult hitResult = client.crosshairTarget;
 
-                                // Check if we're looking at a block
-                                if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
-                                    BlockHitResult blockHitResult = (BlockHitResult) hitResult;
+                        // Check if we're looking at a block
+                        if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
+                            BlockHitResult blockHitResult = (BlockHitResult) hitResult;
 
-                                    BlockState hitBlockState = client.world.getBlockState(blockHitResult.getBlockPos());
+                            BlockState hitBlockState = client.world.getBlockState(blockHitResult.getBlockPos());
 
-                                    if (hitBlockState.getBlock() == Blocks.CRAFTING_TABLE) {
-                                        if (hasCraftables(client)) {
-                                            packetQueue.add(new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, blockHitResult, 0));
-                                        } else {
-                                            if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
-                                                client.getNetworkHandler().sendCommand("shop");
-                                                lastShopTime = client.world.getTime();
-                                            }
-                                        }
+                            if (hitBlockState.getBlock() == Blocks.CRAFTING_TABLE) {
+                                if (hasCraftables(client)) {
+                                    packetQueue.add(new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, blockHitResult, 0));
+                                } else {
+                                    if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
+                                        client.getNetworkHandler().sendCommand("shop");
+                                        lastShopTime = client.world.getTime();
                                     }
                                 }
                             }
                         }
                     }
                 }
+            }
+        }
 
-                if (!packetQueue.isEmpty()) {
-                    Packet<?> packet = packetQueue.get(0);
-                    packetQueue.remove(0);
-                    if (packet instanceof CloseHandledScreenC2SPacket) {
-                        if (client.currentScreen instanceof HandledScreen) {
-                            HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
-                            handledScreen.close();
-                            packetQueue.clear();
+        if (!packetQueue.isEmpty()) {
+            Packet<?> packet = packetQueue.get(0);
+            packetQueue.remove(0);
+            if (packet instanceof CloseHandledScreenC2SPacket) {
+                if (client.currentScreen instanceof HandledScreen) {
+                    HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
+                    handledScreen.close();
+                    packetQueue.clear();
+                }
+            }
+            else if (packet instanceof ClickSlotC2SPacket) {
+                if (client.currentScreen instanceof HandledScreen) {
+                    HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
+                    ScreenHandler screenHandler = handledScreen.getScreenHandler();
+
+                    if (handledScreen.getTitle().getString().contains("Craft")) {
+                        screenHandler.onSlotClick(((ClickSlotC2SPacket) packet).getSlot(), ((ClickSlotC2SPacket) packet).getButton(), ((ClickSlotC2SPacket) packet).getActionType(), client.player);
+                    }
+                }
+            }
+            client.getNetworkHandler().sendPacket(packet);
+        }
+    }
+
+    private void sellFurnaceMinecart(MinecraftClient client) {
+        if (client.currentScreen == null) {
+            if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
+                client.getNetworkHandler().sendCommand("shop");
+                lastShopTime = client.world.getTime();
+            }
+        }
+        else if (client.currentScreen.getTitle().getString().contains("Start Page")) {
+            client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, client.player.currentScreenHandler.getSlot(32).id, 0, SlotActionType.PICKUP, client.player);
+        }
+        else if (client.currentScreen.getTitle().getString().contains("Redstone")) {
+            client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, client.player.currentScreenHandler.getSlot(22).id, 0, SlotActionType.PICKUP, client.player);
+        }
+        else if (client.currentScreen.getTitle().getString().contains("Trade")) {
+            if (UtilStuff.menuHasItem(Items.FURNACE_MINECART, 1, client.player.currentScreenHandler, client.player.getInventory())) {
+                client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, client.player.currentScreenHandler.getSlot(8).id, 0, SlotActionType.PICKUP, client.player);
+                client.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(client.player.currentScreenHandler.syncId));
+                client.setScreen(null);
+            }
+            else {
+                client.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(client.player.currentScreenHandler.syncId));
+                client.setScreen(null);
+            }
+        }
+    }
+
+    private void buyIron(MinecraftClient client) {
+        if (client.currentScreen == null) {
+            if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
+                client.getNetworkHandler().sendCommand("shop");
+                lastShopTime = client.world.getTime();
+            }
+        }
+        else if (client.currentScreen.getTitle().getString().contains("Start Page")) {
+            client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, client.player.currentScreenHandler.getSlot(14).id, 0, SlotActionType.PICKUP, client.player);
+        }
+        else if (client.currentScreen.getTitle().getString().contains("Ores")) {
+            client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, client.player.currentScreenHandler.getSlot(11).id, 0, SlotActionType.PICKUP, client.player);
+        }
+        else if (client.currentScreen.getTitle().getString().contains("Trade")) {
+            if (UtilStuff.menuHasItem(Items.IRON_INGOT, 1, client.player.currentScreenHandler, client.player.getInventory())) {
+                client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, client.player.currentScreenHandler.getSlot(17).id, 0, SlotActionType.PICKUP, client.player);
+                client.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(client.player.currentScreenHandler.syncId));
+                client.setScreen(null);
+            }
+            else {
+                client.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(client.player.currentScreenHandler.syncId));
+                client.setScreen(null);
+            }
+        }
+    }
+
+    private void buyCobblestone(MinecraftClient client) {
+        if (client.currentScreen == null) {
+            if (client.world.getTime() < lastShopTime || client.world.getTime() > lastShopTime + (80)) {
+                client.getNetworkHandler().sendCommand("shop");
+                lastShopTime = client.world.getTime();
+            }
+        }
+        else if (client.currentScreen.getTitle().getString().contains("Start Page")) {
+            client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, client.player.currentScreenHandler.getSlot(12).id, 0, SlotActionType.PICKUP, client.player);
+        }
+        else if (client.currentScreen.getTitle().getString().contains("Blocks")) {
+            client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, client.player.currentScreenHandler.getSlot(44).id, 0, SlotActionType.PICKUP, client.player);
+        }
+        else if (client.currentScreen.getTitle().getString().contains("Trade")) {
+            if (UtilStuff.menuHasItem(Items.COBBLESTONE, 1, client.player.currentScreenHandler, client.player.getInventory())) {
+                client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, client.player.currentScreenHandler.getSlot(17).id, 0, SlotActionType.PICKUP, client.player);
+                client.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(client.player.currentScreenHandler.syncId));
+                client.setScreen(null);
+            }
+            else {
+                client.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(client.player.currentScreenHandler.syncId));
+                client.setScreen(null);
+            }
+        }
+    }
+
+    private void doMinecart(MinecraftClient client) {
+        if ((UtilStuff.hasItem(Items.MINECART, 1, client.player.getInventory()) && UtilStuff.hasItem(Items.FURNACE, 1, client.player.getInventory())) || UtilStuff.hasItem(Items.IRON_INGOT, 5, client.player.getInventory()) || UtilStuff.hasItem(Items.COBBLESTONE, 8, client.player.getInventory())){
+            HitResult hitResult = client.crosshairTarget;
+
+            // Check if we're looking at a block
+            if (hitResult != null && hitResult.getType() == HitResult.Type.BLOCK) {
+                BlockHitResult blockHitResult = (BlockHitResult) hitResult;
+
+                BlockState hitBlockState = client.world.getBlockState(blockHitResult.getBlockPos());
+
+                if (hitBlockState.getBlock() == Blocks.CRAFTING_TABLE) {
+                    if (!(client.player.currentScreenHandler instanceof CraftingScreenHandler)) {
+                        client.getNetworkHandler().sendPacket(new PlayerInteractBlockC2SPacket(Hand.MAIN_HAND, blockHitResult, 0));
+                    }
+                    else {
+                        if (UtilStuff.hasItem(Items.MINECART, 1, client.player.getInventory()) && UtilStuff.hasItem(Items.FURNACE, 1, client.player.getInventory())) {
+                            UtilStuff.craftItemLarge(Items.FURNACE_MINECART, client);
+                        }
+                        else if (UtilStuff.hasItem(Items.IRON_INGOT, 5, client.player.getInventory())) {
+                            UtilStuff.craftItemLarge(Items.MINECART, client);
+                        }
+                        else if (UtilStuff.hasItem(Items.COBBLESTONE, 8, client.player.getInventory())) {
+                            UtilStuff.craftItemLarge(Items.FURNACE, client);
+                        }
+                        else {
+                            client.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(client.player.currentScreenHandler.syncId));
+                            client.setScreen(null);
                         }
                     }
-                    else if (packet instanceof ClickSlotC2SPacket) {
-                        if (client.currentScreen instanceof HandledScreen) {
-                            HandledScreen<?> handledScreen = (HandledScreen<?>) client.currentScreen;
-                            ScreenHandler screenHandler = handledScreen.getScreenHandler();
+                }
+            }
+        }
+        else {
+            if (client.player.currentScreenHandler instanceof CraftingScreenHandler) {
+                client.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(client.player.currentScreenHandler.syncId));
+                client.setScreen(null);
+            }
+            if (UtilStuff.hasItem(Items.FURNACE_MINECART, 1, client.player.getInventory())) {
+                sellFurnaceMinecart(client);
+            }
+            else {
+                if (!UtilStuff.hasItem(Items.MINECART, 1, client.player.getInventory())) {
+                    buyIron(client);
+                }
+                else if (!UtilStuff.hasItem(Items.FURNACE, 1, client.player.getInventory())) {
+                    buyCobblestone(client);
+                }
+            }
+        }
+    }
 
-                            if (handledScreen.getTitle().getString().contains("Craft")) {
-                                screenHandler.onSlotClick(((ClickSlotC2SPacket) packet).getSlot(), ((ClickSlotC2SPacket) packet).getButton(), ((ClickSlotC2SPacket) packet).getActionType(), client.player);
-                            }
-                        }
+    private void doCraftLoop(MinecraftClient client) {
+        if (UtilStuff.hasItem(Items.IRON_INGOT, 1, client.player.getInventory())) {
+            UtilStuff.craftItemLarge(Items.IRON_NUGGET, client);
+        }
+        else if (UtilStuff.hasItem(Items.IRON_NUGGET, 9, client.player.getInventory())) {
+            UtilStuff.craftItemLarge(Items.IRON_INGOT, client);
+        }
+        else {
+            crafter = false;
+            client.player.sendMessage(Text.literal("No iron found in inventory.").withColor(Formatting.RED.getColorValue()));
+        }
+    }
+
+    private void doGoldCraftLoop(MinecraftClient client) {
+        if (UtilStuff.hasItem(Items.GOLD_INGOT, 9, client.player.getInventory())) {
+            UtilStuff.craftItemLarge(Items.GOLD_BLOCK, client);
+        }
+        else if (UtilStuff.hasItem(Items.GOLD_NUGGET, 9, client.player.getInventory())) {
+            UtilStuff.craftItemLarge(Items.GOLD_INGOT, client);
+        }
+        else {
+            crafter = false;
+            client.player.sendMessage(Text.literal("No gold found in inventory.").withColor(Formatting.RED.getColorValue()));
+        }
+    }
+
+    @Override
+    public void onInitializeClient() {
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.player == null) return;
+
+            if (client.world.getTime() % 8 == 0) {
+                doArbitrage(client);
+            }
+            if (minecart) {
+                if (client.world.getTime() % 8 == 0) {
+                    doMinecart(client);
+                }
+            }
+            else if (crafter) {
+                if (client.currentScreen instanceof CraftingScreen) {
+//                    if (client.world.getTime() % 8 == 0) {
+//                        doCraftLoop(client);
+//                    }
+                    doCraftLoop(client);
+                }
+            }
+            else if (gold_crafter) {
+                if (client.currentScreen instanceof CraftingScreen) {
+                    if (client.world.getTime() % 4 == 0) {
+                        doGoldCraftLoop(client);
                     }
-                    client.getNetworkHandler().sendPacket(packet);
                 }
             }
         });
