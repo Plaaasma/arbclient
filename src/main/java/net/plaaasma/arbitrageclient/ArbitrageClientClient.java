@@ -674,13 +674,13 @@ public class ArbitrageClientClient implements ClientModInitializer {
                     }
                     else {
                         if (UtilStuff.hasItem(Items.MINECART, 1, client.player.getInventory()) && UtilStuff.hasItem(Items.FURNACE, 1, client.player.getInventory())) {
-                            UtilStuff.craftItemLarge(Items.FURNACE_MINECART, client);
+                            UtilStuff.craftItemLarge(Items.FURNACE_MINECART, client, false);
                         }
                         else if (UtilStuff.hasItem(Items.IRON_INGOT, 5, client.player.getInventory())) {
-                            UtilStuff.craftItemLarge(Items.MINECART, client);
+                            UtilStuff.craftItemLarge(Items.MINECART, client, false);
                         }
                         else if (UtilStuff.hasItem(Items.COBBLESTONE, 8, client.player.getInventory())) {
-                            UtilStuff.craftItemLarge(Items.FURNACE, client);
+                            UtilStuff.craftItemLarge(Items.FURNACE, client, true);
                         }
                         else {
                             client.getNetworkHandler().sendPacket(new CloseHandledScreenC2SPacket(client.player.currentScreenHandler.syncId));
@@ -711,10 +711,10 @@ public class ArbitrageClientClient implements ClientModInitializer {
 
     private void doCraftLoop(MinecraftClient client) {
         if (UtilStuff.hasItem(Items.IRON_INGOT, 1, client.player.getInventory())) {
-            UtilStuff.craftItemLarge(Items.IRON_NUGGET, client);
+            UtilStuff.craftItemLarge(Items.IRON_NUGGET, client, false);
         }
         else if (UtilStuff.hasItem(Items.IRON_NUGGET, 9, client.player.getInventory())) {
-            UtilStuff.craftItemLarge(Items.IRON_INGOT, client);
+            UtilStuff.craftItemLarge(Items.IRON_INGOT, client, false);
         }
         else {
             crafter = false;
@@ -724,10 +724,10 @@ public class ArbitrageClientClient implements ClientModInitializer {
 
     private void doGoldCraftLoop(MinecraftClient client) {
         if (UtilStuff.hasItem(Items.GOLD_INGOT, 9, client.player.getInventory())) {
-            UtilStuff.craftItemLarge(Items.GOLD_BLOCK, client);
+            UtilStuff.craftItemLarge(Items.GOLD_BLOCK, client, true);
         }
         else if (UtilStuff.hasItem(Items.GOLD_NUGGET, 9, client.player.getInventory())) {
-            UtilStuff.craftItemLarge(Items.GOLD_INGOT, client);
+            UtilStuff.craftItemLarge(Items.GOLD_INGOT, client, true);
         }
         else {
             crafter = false;
@@ -758,7 +758,7 @@ public class ArbitrageClientClient implements ClientModInitializer {
             }
             else if (gold_crafter) {
                 if (client.currentScreen instanceof CraftingScreen) {
-                    if (client.world.getTime() % 4 == 0) {
+                    if (client.world.getTime() % 8 == 0) {
                         doGoldCraftLoop(client);
                     }
                 }

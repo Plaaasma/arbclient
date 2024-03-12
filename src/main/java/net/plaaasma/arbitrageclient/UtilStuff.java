@@ -47,7 +47,7 @@ public class UtilStuff {
         return false;
     }
 
-    public static void craftItemLarge(Item item, MinecraftClient client) {
+    public static void craftItemLarge(Item item, MinecraftClient client, boolean craftAll) {
         ClientPlayerEntity player = client.player;
         RecipeManager recipeManager = client.world.getRecipeManager();
 
@@ -83,7 +83,7 @@ public class UtilStuff {
                     }
 
                     if (ingredientAmount == neededIngredientAmount) {
-                        client.interactionManager.clickRecipe(client.player.currentScreenHandler.syncId, recipeEntry, false);
+                        client.interactionManager.clickRecipe(client.player.currentScreenHandler.syncId, recipeEntry, craftAll);
                         client.interactionManager.clickSlot(client.player.currentScreenHandler.syncId, 0, 0, SlotActionType.QUICK_MOVE, player);
 //                        client.setScreen(null);
 
