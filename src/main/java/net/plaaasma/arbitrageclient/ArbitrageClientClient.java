@@ -730,7 +730,6 @@ public class ArbitrageClientClient implements ClientModInitializer {
             UtilStuff.craftItemLarge(Items.GOLD_INGOT, client, true);
         }
         else {
-            crafter = false;
             client.player.sendMessage(Text.literal("No gold found in inventory.").withColor(Formatting.RED.getColorValue()));
         }
     }
